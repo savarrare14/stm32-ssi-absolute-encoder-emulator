@@ -7,7 +7,7 @@ An embedded firmware project that emulates a 32-bit Synchronous Serial Interface
 ## Project highlights
 
 - Builds a 32-bit position frame with an 18-bit single-turn count, 12-bit multiturn count, and 2 status/error bits.
-- Converts the complete 32-bit word from binary to Gray code using (G = B \oplus (B >> 1)).
+- Converts the complete 32-bit word from binary to Gray code using `G = B XOR (B >> 1)`.
 - Uses TIM2 PWM as the SSI clock source and a TIM2 CC4 interrupt to update serial data.
 - Uses TIM5 as a free-running position counter, with the lower 18 bits providing the single-turn count.
 - Uses TIM6 one-pulse mode to create an inter-frame idle interval; the design target is 30 µs.

@@ -2,9 +2,9 @@
 
 ## Scope
 
-The report describes an SSI absolute-encoder emulator / transmitter prototype implemented on an STM32F406G-DISC1 development board (MCU named as STM32F406VGT6 in the report body). The prototype uses general-purpose timers, GPIO, and SPI rather than dedicated SSI protocol silicon.
+This project implements the SSI absolute-encoder transmit path using general-purpose timers, GPIO, and SPI rather than dedicated SSI protocol hardware. The target-board identifier needs verification: project notes name STM32F406G-DISC1 / STM32F406VGT6, while an architecture diagram labels STM32F407G-DISC1.
 
-**Important test-setup distinction:** SSI is normally clocked by a receiving master. The documented experiment generated a clock using TIM2 on the same MCU and looped the clock and data into SPI1 for internal verification. The report states that no external SSI master, encoder-interface card, or RS-422/RS-485 line driver was used. This internal setup is useful for waveform and frame-path verification, but it should not be presented as an end-to-end test with a real external SSI master.
+**Test-setup boundary:** SSI is normally clocked by a receiving master. In this prototype test setup, TIM2 generates the clock on the MCU and the clock/data lines are looped into SPI1 for internal verification. An external SSI master, encoder-interface card, or RS-422/RS-485 line driver is not part of this setup. This verifies the local waveform and transmit/receive path, not an end-to-end connection to a real external master.
 
 ## Data path
 
@@ -20,7 +20,7 @@ The report describes an SSI absolute-encoder emulator / transmitter prototype im
 
 ## Peripheral allocation
 
-| Peripheral / block | Configuration described in report | Purpose |
+| Peripheral / block | Project configuration / role | Purpose |
 |---|---|---|
 | TIM5 | Free-running 32-bit up-counter; lower 18 bits used | Single-turn position |
 | TIM2 PWM | PWM output with a target 50% duty cycle | Hardware clock generation |
@@ -31,34 +31,34 @@ The report describes an SSI absolute-encoder emulator / transmitter prototype im
 | NVIC | Interrupt handling | Dispatch timer and SPI handlers |
 | SWD / ST-LINK | On-board debugger/programmer | Flash, debug and live-watch |
 
-The report states that DMA was not used.
+DMA is not used in the described design.
 
 ## Frame fields
 
-The frame fields as documented before the whole composite value is Gray-encoded:
+The frame fields before the complete 32-bit word is Gray-encoded are:
 
 | Field | Width | Behavior described |
 |---|---:|---|
 | Single-turn position | 18 bits | Lower 18 bits of TIM5; range 0–262143 |
 | Multiturn count | 12 bits | Software counter increments on single-turn rollover |
-| Status/error | 2 bits | Internal consistency/fault flags described in the report |
+| Status/error | 2 bits | Intended for internal consistency / fault flags; define exact bit meanings in firmware documentation |
 | Total | 32 bits | Transmitted MSB-first after whole-word Gray conversion |
 
-The report describes a 12-bit multiturn range of 4096 revolutions before that field wraps.
+The 12-bit multiturn field has 4096 representable states before it wraps.
 
 ## Timing design
 
 TIM2 generates clock edges independently in hardware, so clock edges are not toggled from within an ISR. The CC4 compare event is phase-offset to fall inside the clock-high window, where the ISR sets the current data bit and advances the shift register. The intent is to leave time for the data signal to settle before the next clock edge.
 
-After 32 transmitted bits, the code stops the clock and triggers TIM6 one-pulse mode. The design target for the inter-frame idle interval is 30 µs, although the report's captured evidence contains a separate 65 µs caption for one 10 kHz view; the exact as-built idle interval needs a direct measurement.
+After 32 transmitted bits, the clock is stopped and TIM6 one-pulse mode creates the inter-frame idle interval. The design target is 30 µs. One 10 kHz capture is captioned as 65 µs, so the actual interval must be measured directly before claiming the target is met.
 
 ## Board identity note
 
-The report body names STM32F406G-DISC1 and STM32F406VGT6, while the block diagram at report page 28 contains a label reading STM32F407G-DISC1. Verify the physical board marking and the CubeMX project before treating the diagram label as definitive.
+The hardware identifier remains unresolved: project notes name STM32F406G-DISC1 / STM32F406VGT6, while one architecture diagram labels STM32F407G-DISC1. Verify the physical board marking and STM32CubeMX target.
 
 ## Architecture diagram
 
-The report's block diagram can be represented as a high-level signal path:
+The system's high-level signal path is:
 
 ```mermaid
 flowchart TD
@@ -78,4 +78,4 @@ flowchart TD
 
 The accompanying firmware-flow sequence is: initialize HAL / clock / GPIO / NVIC and peripherals; read position; construct and Gray-encode frame; load shift register; start TIM2; emit one data bit per CC4 interrupt; after 32 bits stop TIM2 and trigger TIM6; after the idle interval relatch and restart; in parallel, SPI1 reconstructs and compares received frames.
 
-The original raster diagrams from the report have been extracted locally, but are not committed as PNG files in this repo yet.
+This diagram shows the functional signal path. Exact pin-level wiring and peripheral configuration should be confirmed from the original STM32CubeMX project.

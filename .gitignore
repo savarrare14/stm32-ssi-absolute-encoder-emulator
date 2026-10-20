@@ -1,0 +1,35 @@
+# STM32CubeIDE / Eclipse workspace and build output
+Debug/
+Release/
+.settings/
+.metadata/
+.project
+.cproject
+*.launch
+
+# Tool-generated output
+build/
+out/
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+*.lst
+*.su
+
+# Editor and operating-system files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local/private configuration
+.env
+.env.*
+secrets.*
+private_config.*

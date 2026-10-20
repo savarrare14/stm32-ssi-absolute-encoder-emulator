@@ -56,9 +56,26 @@ After 32 transmitted bits, the code stops the clock and triggers TIM6 one-pulse 
 
 The report body names STM32F406G-DISC1 and STM32F406VGT6, while the block diagram at report page 28 contains a label reading STM32F407G-DISC1. Verify the physical board marking and the CubeMX project before treating the diagram label as definitive.
 
-## Diagrams
+## Architecture diagram
 
-- [System block diagram](architecture/system-architecture.png)
-- [Firmware execution flow](architecture/firmware-execution-flow.png)
+The report's block diagram can be represented as a high-level signal path:
 
-These figures are cropped from the project's technical report for technical documentation. 
+```mermaid
+flowchart TD
+  POS["TIM5 lower 18 bits"] --> PACK["Pack position fields: 18-bit single-turn, 12-bit multiturn, 2 status bits"]
+  PACK --> GRAY["Whole-word 32-bit binary-to-Gray conversion"]
+  GRAY --> SHIFT["32-bit transmit shift register"]
+  CLK["TIM2 PWM"] --> CLKOUT["SSI clock output"]
+  SHIFT --> CC4["TIM2 CC4 interrupt"]
+  CC4 --> DATA["GPIO serial data"]
+  CC4 --> END{"32 bits sent?"}
+  END -- Yes --> IDLE["TIM6 one-pulse idle interval"]
+  IDLE --> POS
+  CLKOUT --> RX["SPI1 receive path"]
+  DATA --> RX
+  RX --> CHECK["Frame comparison"]
+```
+
+The accompanying firmware-flow sequence is: initialize HAL / clock / GPIO / NVIC and peripherals; read position; construct and Gray-encode frame; load shift register; start TIM2; emit one data bit per CC4 interrupt; after 32 bits stop TIM2 and trigger TIM6; after the idle interval relatch and restart; in parallel, SPI1 reconstructs and compares received frames.
+
+The original raster diagrams from the report have been extracted locally, but are not committed as PNG files in this repo yet.

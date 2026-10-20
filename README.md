@@ -16,31 +16,45 @@ A firmware implementation study of a 32-bit Synchronous Serial Interface (SSI) a
 
 ## System architecture
 
-![SSI encoder emulator architecture](docs/architecture/system-architecture.png)
+The report's architecture can be summarized as follows:
 
-The report's firmware execution flow is shown below.
+```mermaid
+flowchart LR
+  TIM5["TIM5: lower 18-bit position"] --> FRAME["Build 18-bit single-turn + 12-bit multiturn + 2 status bits"]
+  FRAME --> GRAY["Convert full 32-bit word to Gray code"]
+  GRAY --> SHIFT["32-bit shift register"]
+  TIM2["TIM2 PWM: hardware clock"] --> CLOCK["SSI clock output"]
+  TIM2CC4["TIM2 CC4 interrupt"] --> DATA["GPIO serial data output"]
+  SHIFT --> TIM2CC4
+  TIM2CC4 --> COUNT{"32 bits sent?"}
+  COUNT -- Yes --> TIM6["TIM6 one-pulse idle interval"]
+  TIM6 --> FRAME
+  CLOCK --> SPI1["SPI1 receive path"]
+  DATA --> SPI1
+  SPI1 --> VERIFY["Compare reconstructed frame"]
+```
 
-![Firmware execution flow](docs/architecture/firmware-execution-flow.png)
+The original report block diagram and firmware-flowchart images are included in the local screenshot bundle for upload if you want them published too.
 
 ## Waveform evidence
 
-The screenshots below are taken from the project's technical report. Channel A is the red SSI clock trace and Channel B is the blue data trace. Captions and measurement caveats are documented in [Waveform notes](docs/waveforms/README.md).
+Four original oscilloscope screenshots have been extracted from the project's technical report and packaged locally for upload. They are not yet committed as PNG files in this GitHub repository because the connected GitHub file-content action does not accept local binary files directly. Channel A is the red SSI clock trace and Channel B is the blue data trace. Captions and measurement caveats are documented in [Waveform notes](docs/waveforms/README.md).
 
 ### 10 kHz configuration — multi-frame view (400 µs/div)
 
-![10 kHz SSI clock and data, 400 microseconds per division](docs/waveforms/fig-8-1-10khz-400us-div.png)
+Screenshot filename: `docs/waveforms/fig-8-1-10khz-400us-div.png` (in the local bundle; upload pending).
 
 ### 10 kHz configuration — consecutive-frame view (1 ms/div)
 
-![10 kHz SSI clock and data, 1 millisecond per division](docs/waveforms/fig-8-2-10khz-1ms-div.png)
+Screenshot filename: `docs/waveforms/fig-8-2-10khz-1ms-div.png` (in the local bundle; upload pending).
 
 ### Nominal 100 kHz configuration — multi-frame view (100 µs/div)
 
-![Nominal 100 kHz SSI clock and data, 100 microseconds per division](docs/waveforms/fig-8-3-100khz-100us-div.png)
+Screenshot filename: `docs/waveforms/fig-8-3-100khz-100us-div.png` (in the local bundle; upload pending).
 
 ### Nominal 100 kHz configuration — frequency counter capture
 
-![Nominal 100 kHz setup with oscilloscope frequency readout](docs/waveforms/fig-8-4-config-100khz-readout-93-08khz.png)
+Screenshot filename: `docs/waveforms/fig-8-4-config-100khz-readout-93-08khz.png` (in the local bundle; upload pending).
 
 **Measurement note:** the fourth screenshot's automatic frequency counter reads approximately 93.08 kHz. The report suggests that the counter window may include an inter-frame idle interval, but a within-burst period measurement is needed to confirm the actual clock frequency. Do not describe the 100 kHz target as quantitatively confirmed by that screenshot alone.
 

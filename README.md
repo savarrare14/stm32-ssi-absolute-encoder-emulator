@@ -70,6 +70,21 @@ Screenshot filename: `docs/waveforms/fig-8-4-config-100khz-readout-93-08khz.png`
 | GPIO | Serial data output |
 | NVIC / HAL | Interrupt handling and peripheral integration |
 
+## Technical documentation
+
+| Document | Contents |
+|---|---|
+| [System architecture](docs/system-architecture.md) | Data path, timer roles, frame flow and internal verification path |
+| [SSI protocol background](docs/ssi-protocol-background.md) | SSI operation, electrical interface, timing terms, cable-length guidance and limitations |
+| [Frame and Gray code](docs/ssi-frame-and-gray-code.md) | Bit fields, position ranges, Gray conversion and frame comparison |
+| [Timer design](docs/timer-design.md) | TIM2 frequency relation, CC4 timing, TIM5 position counter and TIM6 idle timer |
+| [Board platform](docs/board-platform.md) | STM32 platform, peripherals and development tools |
+| [Experimental setup](docs/experimental-setup.md) | Hardware/software setup and reproduction details |
+| [Experimental validation](docs/experimental-validation.md) | Waveform observations, measurement gaps and follow-up checks |
+| [SSI / EnDat comparison and future work](docs/EnDat-comparison-and-future-work.md) | Report's protocol comparison and proposed extensions |
+| [References](docs/references.md) | Bibliography transcribed from the report |
+| [Waveform notes](docs/waveforms/README.md) | Captions and caveats for four extracted captures |
+
 ## Frame construction
 
 Before Gray conversion, the frame consists of an 18-bit single-turn field, a 12-bit multiturn field, and a 2-bit status/error field. The report describes converting the full composite 32-bit word to Gray code, then transmitting the word MSB-first.

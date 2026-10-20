@@ -1,118 +1,121 @@
 # STM32 SSI Absolute Encoder Emulator
 
-A firmware implementation study of a 32-bit Synchronous Serial Interface (SSI) absolute-encoder transmitter on the STM32F406G-DISC1 development board, using timer peripherals, GPIO serialization, Gray-code conversion, and on-chip SPI frame verification.
+An embedded firmware project that emulates a 32-bit Synchronous Serial Interface (SSI) absolute encoder using STM32 timer peripherals, GPIO-based serial data output, binary-to-Gray conversion, and SPI-based internal frame verification.
 
-> **Repository scope:** This repository documents the design and test evidence described in the project report. The original STM32CubeIDE source, header, .ioc, and project files have not yet been added, so the repository is not currently a complete buildable firmware package.
+> **Project status:** The repository contains the system design, technical notes, and oscilloscope captures from the prototype. The original STM32CubeIDE source tree, header files, `.ioc` configuration, and a reproducible build package have not yet been added. The current repository is therefore documentation-supported, not a standalone buildable firmware release.
 
-## Highlights
+## Project highlights
 
-- 32-bit frame design: 18-bit single-turn position, 12-bit multiturn count, and 2 status/error bits.
-- Whole-word binary-to-Gray conversion using G = B XOR (B >> 1).
-- TIM2 hardware PWM for clock generation and TIM2 CC4 interrupt for data-bit updates.
-- TIM5 free-running 32-bit timer, using the lower 18 bits as a single-turn position source.
-- TIM6 one-pulse mode for inter-frame separation; 30 µs is the documented design target.
-- SPI1 receive-side verification that samples the shared clock/data signals and compares reconstructed frames.
-- Oscilloscope captures at a 10 kHz configuration and a nominal 100 kHz configuration.
+- Builds a 32-bit position frame with an 18-bit single-turn count, 12-bit multiturn count, and 2 status/error bits.
+- Converts the complete 32-bit word from binary to Gray code using (G = B \oplus (B >> 1)).
+- Uses TIM2 PWM as the SSI clock source and a TIM2 CC4 interrupt to update serial data.
+- Uses TIM5 as a free-running position counter, with the lower 18 bits providing the single-turn count.
+- Uses TIM6 one-pulse mode to create an inter-frame idle interval; the design target is 30 µs.
+- Uses SPI1 as an internal receive path to reconstruct and compare transmitted frames.
+- Includes oscilloscope captures from 10 kHz and nominal 100 kHz clock configurations.
 
 ## System architecture
-
-The report's architecture can be summarized as follows:
 
 ```mermaid
 flowchart LR
   TIM5["TIM5: lower 18-bit position"] --> FRAME["Build 18-bit single-turn + 12-bit multiturn + 2 status bits"]
   FRAME --> GRAY["Convert full 32-bit word to Gray code"]
   GRAY --> SHIFT["32-bit shift register"]
-  TIM2["TIM2 PWM: hardware clock"] --> CLOCK["SSI clock output"]
+  TIM2["TIM2 PWM: clock generation"] --> CLOCK["SSI clock output"]
   TIM2CC4["TIM2 CC4 interrupt"] --> DATA["GPIO serial data output"]
   SHIFT --> TIM2CC4
   TIM2CC4 --> COUNT{"32 bits sent?"}
-  COUNT -- Yes --> TIM6["TIM6 one-pulse idle interval"]
+  COUNT -->|Yes| TIM6["TIM6 one-pulse frame gap"]
   TIM6 --> FRAME
-  CLOCK --> SPI1["SPI1 receive path"]
+  CLOCK --> SPI1["SPI1 internal receive path"]
   DATA --> SPI1
-  SPI1 --> VERIFY["Compare reconstructed frame"]
+  SPI1 --> VERIFY["Compare received frame with transmitted word"]
 ```
 
-The original report block diagram and firmware-flowchart images are included in the local screenshot bundle for upload if you want them published too.
+The design uses a timer-generated clock for the prototype test setup and loops the clock/data signals into SPI1 for internal verification. This validates the local transmit/receive path, but it is not the same as testing against an independent SSI master or a field encoder interface.
 
 ## Waveform evidence
 
-Four original oscilloscope screenshots extracted from the project's technical report are committed below and available in the waveform gallery. Channel A is the red SSI clock trace and Channel B is the blue data trace. Captions and measurement caveats are documented in [Waveform notes](docs/waveforms/README.md).
+The following oscilloscope captures show the SSI clock and serial-data signals. Channel A is the red clock trace and Channel B is the blue data trace. See the [waveform gallery](docs/waveforms/README.md) for observations and measurement caveats.
 
-### 10 kHz configuration — multi-frame view (400 µs/div)
+### 10 kHz configuration — 400 µs/div
 
-![10 kHz SSI clock and data waveform at 400 microseconds per division](docs/waveforms/fig-8-1-10khz-400us-div.png)
+![SSI clock and data waveform at 10 kHz configuration, 400 microseconds per division](docs/waveforms/fig-8-1-10khz-400us-div.png)
 
-### 10 kHz configuration — consecutive-frame view (1 ms/div)
+### 10 kHz configuration — 1 ms/div
 
-![10 kHz SSI clock and data waveform at 1 millisecond per division](docs/waveforms/fig-8-2-10khz-1ms-div.png)
+![SSI clock and data waveform at 10 kHz configuration, 1 millisecond per division](docs/waveforms/fig-8-2-10khz-1ms-div.png)
 
-### Nominal 100 kHz configuration — multi-frame view (100 µs/div)
+### Nominal 100 kHz configuration — 100 µs/div
 
-![Nominal 100 kHz SSI clock and data waveform at 100 microseconds per division](docs/waveforms/fig-8-3-100khz-100us-div.png)
+![SSI clock and data waveform at nominal 100 kHz configuration, 100 microseconds per division](docs/waveforms/fig-8-3-100khz-100us-div.png)
 
 ### Nominal 100 kHz configuration — frequency counter capture
 
-![Nominal 100 kHz configuration scope capture with 93.08 kHz automatic frequency readout](docs/waveforms/fig-8-4-config-100khz-readout-93-08khz.png)
+![Oscilloscope capture for the nominal 100 kHz configuration with 93.08 kHz automatic frequency readout](docs/waveforms/fig-8-4-config-100khz-readout-93-08khz.png)
 
-**Measurement note:** the fourth screenshot's automatic frequency counter reads approximately 93.08 kHz. The report suggests that the counter window may include an inter-frame idle interval, but a within-burst period measurement is needed to confirm the actual clock frequency. Do not describe the 100 kHz target as quantitatively confirmed by that screenshot alone.
+**Measurement caveat:** The automatic frequency counter in the fourth capture reads approximately 93.08 kHz even though the configuration is labelled nominal 100 kHz. The counter may be including part of the inter-frame interval, but the capture does not prove that explanation. Measure the period between adjacent clock edges within one burst to confirm the clock frequency.
 
 ## Peripheral allocation
 
-| Peripheral | Role described in the report |
+| Peripheral / block | Role |
 |---|---|
-| TIM5 | Free-running 32-bit up-counter; lower 18 bits are used for single-turn position |
-| TIM2 PWM | Hardware SSI clock generation |
-| TIM2 CC4 | Interrupt-driven data-bit update within the clock-high window |
-| TIM6 OPM | Inter-frame monoflop/idle-time generation |
-| SPI1 | Interrupt-driven receive path for 32-bit frame comparison |
+| TIM5 | Free-running position counter; lower 18 bits provide single-turn position |
+| TIM2 PWM | SSI clock generation |
+| TIM2 CC4 | Interrupt-driven data-bit update during the clock-high interval |
+| TIM6 one-pulse mode | Inter-frame idle-time generation |
+| SPI1 | Internal receive path for 32-bit frame comparison |
 | GPIO | Serial data output |
-| NVIC / HAL | Interrupt handling and peripheral integration |
+| NVIC / STM32 HAL | Interrupt handling and peripheral integration |
 
 ## Technical documentation
 
-| Document | Contents |
+| Document | What it covers |
 |---|---|
-| [System architecture](docs/system-architecture.md) | Data path, timer roles, frame flow and internal verification path |
-| [SSI protocol background](docs/ssi-protocol-background.md) | SSI operation, electrical interface, timing terms, cable-length guidance and limitations |
-| [Frame and Gray code](docs/ssi-frame-and-gray-code.md) | Bit fields, position ranges, Gray conversion and frame comparison |
-| [Timer design](docs/timer-design.md) | TIM2 frequency relation, CC4 timing, TIM5 position counter and TIM6 idle timer |
-| [Board platform](docs/board-platform.md) | STM32 platform, peripherals and development tools |
-| [Experimental setup](docs/experimental-setup.md) | Hardware/software setup and reproduction details |
-| [Experimental validation](docs/experimental-validation.md) | Waveform observations, measurement gaps and follow-up checks |
-| [SSI / EnDat comparison and future work](docs/EnDat-comparison-and-future-work.md) | Report's protocol comparison and proposed extensions |
-| [References](docs/references.md) | Bibliography transcribed from the report |
-| [Waveform notes](docs/waveforms/README.md) | Captions and caveats for four extracted captures |
+| [System architecture](docs/system-architecture.md) | Signal path, timer roles, frame flow, and internal verification |
+| [SSI protocol background](docs/ssi-protocol-background.md) | SSI operation, electrical interface, timing, and limitations |
+| [Frame and Gray code](docs/ssi-frame-and-gray-code.md) | Bit fields, counter ranges, Gray conversion, and frame comparison |
+| [Timer design](docs/timer-design.md) | TIM2 clock, CC4 timing, TIM5 position counter, and TIM6 frame gap |
+| [Board platform](docs/board-platform.md) | Target hardware, peripherals, and development tools |
+| [Experimental setup](docs/experimental-setup.md) | Setup and steps needed to reproduce the bench test |
+| [Experimental validation](docs/experimental-validation.md) | Captured waveform observations and measurements still needed |
+| [SSI / EnDat comparison and future work](docs/EnDat-comparison-and-future-work.md) | Protocol-level comparison and possible extensions |
+| [References](docs/references.md) | Background technical references |
+| [Waveform gallery](docs/waveforms/README.md) | Captions and caveats for the four oscilloscope captures |
 
-## Frame construction
+## Frame construction and Gray code
 
-Before Gray conversion, the frame consists of an 18-bit single-turn field, a 12-bit multiturn field, and a 2-bit status/error field. The report describes converting the full composite 32-bit word to Gray code, then transmitting the word MSB-first.
+The frame fields are assembled into a 32-bit word: 18 bits for single-turn position, 12 bits for multiturn count, and 2 status/error bits. The complete word is Gray-encoded and transmitted MSB-first.
 
-See [Frame and Gray-code notes](docs/ssi-frame-and-gray-code.md) and [System architecture](docs/system-architecture.md).
+The binary-to-Gray conversion is:
 
-## Experimental results
+`gray = binary ^ (binary >> 1)`
 
-The report describes:
+For an 18-bit single-turn counter, the position range is 0 to 262,143 counts before rollover. The 12-bit multiturn field can represent 4,096 states before its own wraparound. The meaning of individual status/error-bit patterns should be documented alongside the actual firmware before they are treated as standardized flags.
 
-- 32 clock pulses per frame at both tested configurations.
-- Visible inter-frame idle gaps and regular successive bursts.
-- Data transitions confined within the clock-high window in the available captures.
-- A nominal 10–100 kHz test range, with no observed qualitative erosion of the data-transition margin in the provided waveforms.
+See [Frame and Gray-code design](docs/ssi-frame-and-gray-code.md).
 
-Known measurement gaps are preserved in [Experimental validation](docs/experimental-validation.md): consolidated SPI1 pass/fail counts and bit-error-rate data were not included, and the actual monoflop duration was not quantitatively reconciled against its 30 µs design target. One waveform caption reports 65 µs, so this should be measured and resolved rather than assumed.
+## Prototype observations and open measurements
+
+The available captures show repeated 32-pulse clock bursts, visible inter-frame gaps, and data transitions occurring within the clock-high portion of the observed waveforms. Captures are available for the 10 kHz configuration and the nominal 100 kHz configuration.
+
+Important measurements remain open:
+
+- The automatic counter displays approximately 93.08 kHz in the nominal 100 kHz capture; the within-burst clock period needs to be measured directly.
+- The frame-gap design target is 30 µs, while one capture caption records 65 µs. The actual as-built interval must be measured and reconciled.
+- SPI1 pass/fail counters are part of the described internal verification method, but consolidated pass totals, fail totals, and bit-error-rate data are not available in this repository.
+- The setup has not been validated with an independent external SSI master or a production encoder interface.
+
+These gaps are listed in [Experimental validation](docs/experimental-validation.md); they should be resolved with new measurements rather than assumed away.
 
 ## Hardware and software
 
-- **Board named in the report:** STM32F406G-DISC1
-- **MCU named in the report:** STM32F406VGT6, Arm Cortex-M4
-- **IDE / configuration:** STM32CubeIDE and STM32CubeMX
+- **Development platform:** the board identifier needs final verification. Project notes identify STM32F406G-DISC1 / STM32F406VGT6, while an architecture diagram labels STM32F407G-DISC1. Confirm the physical board marking and STM32CubeMX target before finalizing the hardware identity.
+- **Development tools:** STM32CubeIDE and STM32CubeMX
 - **Firmware framework:** STM32CubeF4 HAL
-- **Programming / debug:** onboard ST-LINK/V2-A over SWD
-- **Validation instrumentation:** dual-channel digital oscilloscope
-- **DMA:** not used in the described implementation
-
-The report's body consistently names the STM32F406G-DISC1 / STM32F406VGT6 platform, but one diagram label says STM32F407G-DISC1. Verify the physical board marking and project configuration before reusing that diagram as a definitive hardware identifier.
+- **Programming and debugging:** onboard ST-LINK over SWD
+- **Validation equipment:** dual-channel digital oscilloscope
+- **DMA:** not used in the described design
 
 ## Repository layout
 
@@ -121,15 +124,15 @@ The report's body consistently names the STM32F406G-DISC1 / STM32F406VGT6 platfo
 ├── README.md
 ├── .gitignore
 ├── docs/
-│   ├── architecture/
-│   │   ├── system-architecture.png
-│   │   └── firmware-execution-flow.png
 │   ├── system-architecture.md
 │   ├── ssi-frame-and-gray-code.md
 │   ├── experimental-validation.md
 │   ├── experimental-setup.md
 │   ├── EnDat-comparison-and-future-work.md
 │   ├── references.md
+│   ├── ssi-protocol-background.md
+│   ├── timer-design.md
+│   ├── board-platform.md
 │   └── waveforms/
 │       ├── README.md
 │       └── [four oscilloscope captures]
@@ -139,17 +142,13 @@ The report's body consistently names the STM32F406G-DISC1 / STM32F406VGT6 platfo
 
 ## Scope and limitations
 
-This is an encoder-emulator prototype and a technical documentation package, not a field-ready encoder interface. The report states that no external SSI master, RS-422/RS-485 differential line driver, or receiving encoder-interface card was used in the documented validation setup. An independent external-master test, exact pin mapping, as-built idle-gap measurement, quantitative SPI error statistics, and higher-frequency sweep are still needed for a more complete validation.
+This is an embedded encoder-emulator prototype, not a field-ready encoder interface. The prototype uses GPIO-level signals and an internal SPI receive path; it does not currently demonstrate an external SSI master, a differential RS-422/RS-485 line-driver stage, or a receiving encoder-interface card. Those elements, along with exact pin mapping, reproducible firmware builds, measured frame-gap timing, quantitative SPI error statistics, and a higher-frequency test sweep, are needed for a more complete validation.
 
 ## Next steps
 
-1. Add the original STM32CubeIDE project (.ioc, source, headers, and build/dependency notes) when available and approved for sharing.
-2. Record exact GPIO / alternate-function pin assignments from the actual CubeMX configuration.
+1. Add the original STM32CubeIDE project (`.ioc`, source, headers, and build instructions) when available and approved for sharing.
+2. Verify the physical board and document exact GPIO / alternate-function pin assignments.
 3. Measure the clock period within a burst, excluding the inter-frame gap.
-4. Measure the actual TIM6-generated idle interval and reconcile the 30 µs target with the report's 65 µs caption.
-5. Publish consolidated SPI pass/fail counts and repeatability results.
-6. Test an external SSI master and appropriate differential line-driver hardware before describing it as a field-ready interface.
-
-## Source and attribution
-
-Technical details and original measurement screenshots in this repository are based on the author's summer project technical report (July 2026). Background references are listed in [References](docs/references.md). This repository summarizes the technical material; it does not include the report's certificate or acknowledgement pages.
+4. Measure the actual TIM6-generated frame gap and resolve the 30 µs target versus 65 µs capture-caption discrepancy.
+5. Publish repeatable SPI pass/fail counts and frame-integrity results.
+6. Test with an external SSI master and suitable differential line-driver hardware before claiming field-interface compatibility.

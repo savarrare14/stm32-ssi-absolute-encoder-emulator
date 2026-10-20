@@ -1,10 +1,10 @@
 # Experimental Validation
 
-This page summarizes the scope observations described in the July 2026 technical report. The source screenshots are available in [Waveform gallery](waveforms/README.md).
+This page records observations from the prototype's oscilloscope captures. The captures are available in the [Waveform gallery](waveforms/README.md).
 
-## Setup described in report
+## Bench-test setup
 
-- Board: STM32F406G-DISC1, MCU identified in the report body as STM32F406VGT6.
+- Target board: STM32F406G-DISC1 / STM32F406VGT6 is named in project notes; verify this against the physical board because an architecture diagram labels STM32F407G-DISC1.
 - Firmware environment: STM32CubeIDE with STM32CubeMX-generated initialisation and STM32CubeF4 HAL.
 - Debug/programming: onboard ST-LINK/V2-A through SWD.
 - Instrument: dual-channel digital oscilloscope.
@@ -13,31 +13,31 @@ This page summarizes the scope observations described in the July 2026 technical
 - Coupling and vertical scale: DC coupling, 2 V/division as recorded in the screenshots.
 - Test configurations: nominal 10 kHz and nominal 100 kHz.
 
-The report explains that SPI1 received the same clock/data signals during captures and compared each reconstructed 32-bit frame. The detailed pin numbers and wiring table are not included in the report text excerpt available for this repository; verify them from the original CubeMX project / board wiring before reproducing the setup.
+SPI1 receives the clock/data signals internally and compares each reconstructed 32-bit frame. Exact pin numbers and the full wiring table still need to be verified against the STM32CubeMX project and board wiring before reproducing the setup.
 
-## Qualitative observations documented
+## Observations from the captures
 
 | Observation | 10 kHz configuration | Nominal 100 kHz configuration |
 |---|---|---|
 | Clock burst | 32 evenly spaced pulses per frame in the described capture | 32 evenly spaced pulses per frame in the described capture |
 | Inter-frame gap | Visible in multi-frame views | Visible in multi-frame view |
-| Data transitions | Report says transitions remain within the clock-high window | Report says transitions remain within the clock-high window |
+| Data transitions | Transitions appear within the clock-high window in the available capture | Transitions appear within the clock-high window in the available capture |
 | Successive frames | Regular burst spacing is described | Regular burst spacing is described |
 | Frequency counter | No readout captured in available 10 kHz screenshot | Approx. 93.08 kHz shown in one screenshot |
 
-These are qualitative observations as described in the report, not an independent re-test of the hardware.
+These are visual observations from the available captures, not the result of an independent repeat test.
 
 ## Caveat: configured vs measured clock
 
-The report labels one capture as a nominal 100 kHz configuration, but the oscilloscope's automatic counter displays approximately 93.08 kHz. The report suggests that the counter's measurement window may include part of the inter-frame idle gap; that explanation is plausible but not conclusively demonstrated by the capture. A proper follow-up is to place time cursors between two adjacent rising edges strictly inside a single clock burst and calculate the within-burst period.
+One capture is labelled as a nominal 100 kHz configuration, while the oscilloscope's automatic counter displays approximately 93.08 kHz. The counter may be including part of the inter-frame idle gap, but the capture does not prove that explanation. Place time cursors between adjacent rising edges inside a single clock burst and calculate the within-burst period.
 
 ## Caveat: inter-frame idle / monoflop
 
-The design target is described as 30 µs. However, the caption for the 10 kHz capture at 1 ms/div states a monoflop time of 65 µs, while other descriptions refer to a 30 µs gap. The report explicitly says the exact as-built monoflop value had not been consolidated. These statements are retained as a discrepancy to resolve; this README should not claim that a 30 µs measured interval has been proven.
+The design target for the frame gap is 30 µs, but the 10 kHz capture at 1 ms/div is captioned as a 65 µs monoflop time. The actual as-built interval has not been conclusively established. Treat this as an unresolved measurement discrepancy; do not claim that a 30 µs measured interval has been proven.
 
 ## Caveat: SPI counters
 
-The report says the SPI1 receive path operated concurrently with the captures and had pass/fail counters, but consolidated numerical pass counts, fail counts, and bit-error-rate statistics were not available at report time.
+The SPI1 receive path is intended to compare reconstructed frames and maintain pass/fail counters, but this repository does not contain consolidated pass counts, fail counts, or bit-error-rate statistics.
 
 ## Follow-up measurements
 
@@ -51,4 +51,4 @@ The report says the SPI1 receive path operated concurrently with the captures an
 
 ## Evidence integrity
 
-Do not replace report screenshots with synthetic waveforms or label a design target as a measured value. Add any new measurements with the date, configuration, capture image, and method.
+Keep oscilloscope evidence authentic and distinguish design targets from measured values. Add new measurements with the date, configuration, capture image, and measurement method.

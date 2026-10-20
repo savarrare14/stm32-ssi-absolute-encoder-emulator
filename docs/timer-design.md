@@ -10,7 +10,7 @@ The timer update/output frequency follows this relationship:
 
 f_CLK = f_TIMxCLK / ((PSC + 1) × (ARR + 1))
 
-where PSC is the prescaler register, ARR is the auto-reload value, and f_TIMxCLK is the effective timer input clock. Compute f_TIMxCLK from the actual RCC / APB clock tree; the report notes the STM32 timer-clock doubling behavior when the APB prescaler is not unity.
+where PSC is the prescaler register, ARR is the auto-reload value, and f_TIMxCLK is the effective timer input clock. Compute f_TIMxCLK from the actual RCC / APB clock tree; STM32 timer-clock doubling may apply when the APB prescaler is not unity.
 
 The available captures cover a 10 kHz configuration and a nominal 100 kHz configuration.
 

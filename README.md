@@ -38,23 +38,23 @@ The original report block diagram and firmware-flowchart images are included in 
 
 ## Waveform evidence
 
-Four original oscilloscope screenshots have been extracted from the project's technical report and packaged locally for upload. They are not yet committed as PNG files in this GitHub repository because the connected GitHub file-content action does not accept local binary files directly. Channel A is the red SSI clock trace and Channel B is the blue data trace. Captions and measurement caveats are documented in [Waveform notes](docs/waveforms/README.md).
+Four original oscilloscope screenshots extracted from the project's technical report are committed below and available in the waveform gallery. Channel A is the red SSI clock trace and Channel B is the blue data trace. Captions and measurement caveats are documented in [Waveform notes](docs/waveforms/README.md).
 
 ### 10 kHz configuration — multi-frame view (400 µs/div)
 
-Screenshot filename: `docs/waveforms/fig-8-1-10khz-400us-div.png` (in the local bundle; upload pending).
+![10 kHz SSI clock and data waveform at 400 microseconds per division](docs/waveforms/fig-8-1-10khz-400us-div.png)
 
 ### 10 kHz configuration — consecutive-frame view (1 ms/div)
 
-Screenshot filename: `docs/waveforms/fig-8-2-10khz-1ms-div.png` (in the local bundle; upload pending).
+![10 kHz SSI clock and data waveform at 1 millisecond per division](docs/waveforms/fig-8-2-10khz-1ms-div.png)
 
 ### Nominal 100 kHz configuration — multi-frame view (100 µs/div)
 
-Screenshot filename: `docs/waveforms/fig-8-3-100khz-100us-div.png` (in the local bundle; upload pending).
+![Nominal 100 kHz SSI clock and data waveform at 100 microseconds per division](docs/waveforms/fig-8-3-100khz-100us-div.png)
 
 ### Nominal 100 kHz configuration — frequency counter capture
 
-Screenshot filename: `docs/waveforms/fig-8-4-config-100khz-readout-93-08khz.png` (in the local bundle; upload pending).
+![Nominal 100 kHz configuration scope capture with 93.08 kHz automatic frequency readout](docs/waveforms/fig-8-4-config-100khz-readout-93-08khz.png)
 
 **Measurement note:** the fourth screenshot's automatic frequency counter reads approximately 93.08 kHz. The report suggests that the counter window may include an inter-frame idle interval, but a within-burst period measurement is needed to confirm the actual clock frequency. Do not describe the 100 kHz target as quantitatively confirmed by that screenshot alone.
 

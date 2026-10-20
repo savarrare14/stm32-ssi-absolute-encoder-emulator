@@ -44,7 +44,7 @@ The inter-frame monoflop design target is 30 µs, but one 10 kHz capture is capt
 
 The cited SICK SSI guidance gives the following example values:
 
-| Cable length | Recommended baud rate in report |
+| Cable length | Example recommended baud rate from the cited SSI guidance |
 |---|---:|
 | Less than 50 m | Less than 400 kHz |
 | Less than 100 m | Less than 300 kHz |

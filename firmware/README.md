@@ -1,6 +1,6 @@
 # Firmware Source (to be added)
 
-The uploaded technical report describes firmware built with STM32CubeIDE, STM32CubeMX-generated peripheral initialization, and STM32CubeF4 HAL. The PDF does not include the original source tree, so this directory currently documents what should be uploaded rather than pretending to contain the original implementation.
+The original STM32CubeIDE firmware source tree has not yet been added to this repository. This directory is a placeholder for the project files needed to build and reproduce the SSI emulator; it does not contain the original implementation.
 
 ## Please add the original files when available and approved for sharing
 

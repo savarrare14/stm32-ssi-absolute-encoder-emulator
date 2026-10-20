@@ -1,6 +1,6 @@
 # Oscilloscope Waveform Gallery
 
-Four oscilloscope screenshots have been extracted from the technical report. They are evidence from the report, not new or synthetic captures. The PNG binaries are staged in the downloadable local bundle and still need to be uploaded into this folder through GitHub's web UI; the file names and captions below are prepared for them.
+These four oscilloscope screenshots are extracted from the technical report and committed in this folder. They are report evidence, not new or synthetic captures.
 
 - **Channel A (red):** SSI clock.
 - **Channel B (blue):** serial data.

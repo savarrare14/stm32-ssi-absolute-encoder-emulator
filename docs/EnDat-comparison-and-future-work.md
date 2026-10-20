@@ -18,7 +18,7 @@ This section compares SSI and EnDat 2.2 at a conceptual level; this project impl
 
 1. Add a CRC or parity scheme if the frame format is extended and its compatibility implications are explicitly documented.
 2. Quantify SPI1 pass/fail counts and bit-error statistics over extended runs.
-3. Measure the actual TIM6 idle interval and reconcile it with the documented 30 µs design target and the waveform caption that reports 65 µs.
+3. Measure the actual TIM6 idle interval and resolve the 30 µs design target versus the 65 µs value captioned on one capture.
 4. Use time cursors to measure within-burst clock period; do not rely solely on a counter window that might span the gap.
 5. Sweep the clock above 100 kHz to establish the practical limit of interrupt-driven bit updates.
 6. Consider DMA-based frame handling if needed for higher rates or multiple channels; the described implementation did not use DMA.
